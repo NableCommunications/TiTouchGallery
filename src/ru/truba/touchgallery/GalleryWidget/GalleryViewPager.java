@@ -128,7 +128,11 @@ public class GalleryViewPager extends ViewPager {
                     mOnItemClickListener.onItemClicked(mCurrentView, getCurrentItem());
                 }
             } else {
-                super.onInterceptTouchEvent(event);
+            	try {
+            		return super.onInterceptTouchEvent(event);
+            	} catch (IllegalArgumentException e) {
+            		return false;
+            	}
             }
         }
 
@@ -141,20 +145,36 @@ public class GalleryViewPager extends ViewPager {
         float [] difference = handleMotionEvent(event);
 
         if (mCurrentView.pagerCanScroll()) {
-            return super.onInterceptTouchEvent(event);
+        	try {
+        		return super.onInterceptTouchEvent(event);
+        	} catch (IllegalArgumentException e) {
+        		return false;
+        	}
         }
         else {
             if (difference != null && mCurrentView.onRightSide && difference[0] < 0) //move right
             {
-                return super.onInterceptTouchEvent(event);
+            	try {
+            		return super.onInterceptTouchEvent(event);
+            	} catch (IllegalArgumentException e) {
+            		return false;
+            	}
             }
             if (difference != null && mCurrentView.onLeftSide && difference[0] > 0) //move left
             {
-                return super.onInterceptTouchEvent(event);
+            	try {
+            		return super.onInterceptTouchEvent(event);
+            	} catch (IllegalArgumentException e) {
+            		return false;
+            	}
             }
             if (difference == null && ( mCurrentView.onLeftSide || mCurrentView.onRightSide))
             {
-                return super.onInterceptTouchEvent(event);
+            	try {
+            		return super.onInterceptTouchEvent(event);
+            	} catch (IllegalArgumentException e) {
+            		return false;
+            	}
             }
         }
         return false;
