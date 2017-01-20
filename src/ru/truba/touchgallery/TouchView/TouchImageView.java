@@ -65,7 +65,7 @@ public class TouchImageView extends ImageView {
 
     float saveScale = 1f;
     float minScale = 1f;
-    float maxScale = 3f;
+    float maxScale = 5f;
     float oldDist = 1f;
 
     PointF lastDelta = new PointF(0, 0);
