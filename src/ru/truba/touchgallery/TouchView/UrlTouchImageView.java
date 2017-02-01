@@ -20,6 +20,7 @@ package ru.truba.touchgallery.TouchView;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.util.AttributeSet;
 import android.widget.ImageView.ScaleType;
@@ -30,13 +31,17 @@ import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
 
-
+import com.util.UtilBitmap;
 import com.gbaldera.titouchgallery.RHelper;
 
 //import ru.truba.touchgallery.R;
 import ru.truba.touchgallery.TouchView.InputStreamWrapper.InputStreamProgressListener;
 
 public class UrlTouchImageView extends RelativeLayout {
+
+	private static final int MAX_IMAGE_W = 960;
+	private static final int MAX_IMAGE_H = 960;
+
     protected ProgressBar mProgressBar;
     protected TouchImageView mImageView;
 
@@ -106,7 +111,11 @@ public class UrlTouchImageView extends RelativeLayout {
 						publishProgress((int)(progressValue * 100));
 					}
 				});
-                bm = BitmapFactory.decodeStream(bis);
+
+                bm = BitmapFactory.decodeStream(is, null, UtilBitmap.options(mContext, url, MAX_IMAGE_W, MAX_IMAGE_H));
+                int degree = UtilBitmap.degree(Uri.parse(url));
+                bm = UtilBitmap.rotate(bm, degree);
+
                 bis.close();
                 is.close();
             } catch (Exception e) {
