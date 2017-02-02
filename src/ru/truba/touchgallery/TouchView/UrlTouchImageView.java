@@ -96,32 +96,40 @@ public class UrlTouchImageView extends RelativeLayout {
         protected Bitmap doInBackground(String... strings) {
             String url = strings[0];
             Bitmap bm = null;
-            try {
-                URL aURL = new URL(url);
-                URLConnection conn = aURL.openConnection();
-                conn.connect();
-                InputStream is = conn.getInputStream();
-                int totalLen = conn.getContentLength();
-                InputStreamWrapper bis = new InputStreamWrapper(is, 8192, totalLen);
-                bis.setProgressListener(new InputStreamProgressListener()
-				{					
-					public void onProgress(float progressValue, long bytesLoaded,
-							long bytesTotal)
-					{
-						publishProgress((int)(progressValue * 100));
-					}
-				});
 
-                bm = BitmapFactory.decodeStream(is, null, UtilBitmap.options(mContext, url, MAX_IMAGE_W, MAX_IMAGE_H));
-                int degree = UtilBitmap.degree(Uri.parse(url));
-                bm = UtilBitmap.rotate(bm, degree);
+        	if (url != null && url.indexOf("file://") > -1) {
 
-                bis.close();
-                is.close();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            return bm;
+        		url = url.replace("file://", "");
+
+        		bm = UtilBitmap.decodeFile(url, MAX_IMAGE_W, MAX_IMAGE_H);
+                bm = UtilBitmap.rotate(bm, UtilBitmap.degree(url));
+        	} else {
+
+	            try {
+	                URL aURL = new URL(url);
+	                URLConnection conn = aURL.openConnection();
+	                conn.connect();
+	                InputStream is = conn.getInputStream();
+	                int totalLen = conn.getContentLength();
+	                InputStreamWrapper bis = new InputStreamWrapper(is, 8192, totalLen);
+	                bis.setProgressListener(new InputStreamProgressListener()
+					{					
+						public void onProgress(float progressValue, long bytesLoaded,
+								long bytesTotal)
+						{
+							publishProgress((int)(progressValue * 100));
+						}
+					});
+	
+	                bm = BitmapFactory.decodeStream(is, null, UtilBitmap.options(mContext, url, MAX_IMAGE_W, MAX_IMAGE_H));
+
+	                bis.close();
+	                is.close();
+	            } catch (Exception e) {
+	                e.printStackTrace();
+	            }
+        	}
+	        return bm;
         }
         
         @Override

@@ -13,45 +13,71 @@ import android.net.Uri;
 
 public class UtilBitmap {
 
+	public static Bitmap decodeFile(String file, int reqW, int reqH) {
+
+		if (file == null) {
+			return null;
+		}
+
+		BitmapFactory.Options options = new BitmapFactory.Options();
+		options.inJustDecodeBounds = true;
+		BitmapFactory.decodeFile(file, options);
+
+		UtilSize size = decodeSize(options.outWidth, options.outHeight, reqW, reqH);
+		if (size.pxW() < 1 || size.pxH() < 1) {
+			return null;
+		}
+
+		// SampleSize
+		options.inSampleSize = sampleSize(options.outWidth, options.outHeight, size.pxW(), size.pxH());
+		options.inJustDecodeBounds = false;
+		options.inPreferredConfig = Config.RGB_565;
+
+		return BitmapFactory.decodeFile(file, options);
+	}
+
 	public static BitmapFactory.Options options(Context context, String url, int reqW, int reqH) {
 
-		try {
+		if (context != null && url != null) {
 
-			InputStream is = context.getContentResolver().openInputStream(Uri.parse(url));
-			if (is == null) {
-				return null;
+			try {
+
+				InputStream is = context.getContentResolver().openInputStream(Uri.parse(url));
+				if (is == null) {
+					return null;
+				}
+
+				// Bitmap Size
+				BitmapFactory.Options options = new BitmapFactory.Options();
+				options.inJustDecodeBounds = true;
+				BitmapFactory.decodeStream(is, null, options);
+
+				is.close();
+
+				UtilSize size = decodeSize(options.outWidth, options.outHeight, reqW, reqH);
+				if (size.pxW() < 1 || size.pxH() < 1) {
+					return null;
+				}
+
+				options.inSampleSize = sampleSize(options.outWidth, options.outHeight, size.pxW(), size.pxH());
+				options.inJustDecodeBounds = false;
+				options.inPreferredConfig = Config.RGB_565;
+
+				return options;
+
+			} catch (IOException e) {
 			}
-
-			// Bitmap Size
-			BitmapFactory.Options options = new BitmapFactory.Options();
-			options.inJustDecodeBounds = true;
-			BitmapFactory.decodeStream(is, null, options);
-
-			is.close();
-
-			UtilSize size = decodeSize(options.outWidth, options.outHeight, reqW, reqH);
-			if (size.pxW() < 1 || size.pxH() < 1) {
-				return null;
-			}
-
-			options.inSampleSize = sampleSize(options.outWidth, options.outHeight, size.pxW(), size.pxH());
-			options.inJustDecodeBounds = false;
-			options.inPreferredConfig = Config.RGB_565;
-
-			return options;
-
-		} catch (IOException e) {
 		}
 		return null;
 	}
 
-	public static int degree(Uri uri) {
+	public static int degree(String file) {
 
-		if (uri != null) {
+		if (file != null) {
 
 			try {
 
-				ExifInterface exif = new ExifInterface(uri.getPath());
+				ExifInterface exif = new ExifInterface(file);
 
 				int rotate = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_UNDEFINED);
 				switch (rotate) {
