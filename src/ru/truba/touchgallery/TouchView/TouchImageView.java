@@ -91,6 +91,10 @@ public class TouchImageView extends ImageView {
         this.zoomToOriginalSize = zoomToOriginalSize;
     }    
 
+    public void setMaxScale(float scale) {
+    	maxScale = scale;
+    }
+
     public boolean onLeftSide = false, onTopSide = false, onRightSide = false, onBottomSide = false;
 
     public TouchImageView(Context context) {

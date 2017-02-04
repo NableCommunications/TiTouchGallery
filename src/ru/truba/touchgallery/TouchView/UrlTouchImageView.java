@@ -26,6 +26,8 @@ import android.util.AttributeSet;
 import android.widget.ImageView.ScaleType;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
+import android.media.ThumbnailUtils;
+import android.provider.MediaStore;
 
 import java.io.InputStream;
 import java.net.URL;
@@ -97,12 +99,21 @@ public class UrlTouchImageView extends RelativeLayout {
             String url = strings[0];
             Bitmap bm = null;
 
-        	if (url != null && url.indexOf("file://") > -1) {
+        	if (url != null && url.indexOf("file://") == 0) {
 
         		url = url.replace("file://", "");
 
         		bm = UtilBitmap.decodeFile(url, MAX_IMAGE_W, MAX_IMAGE_H);
                 bm = UtilBitmap.rotate(bm, UtilBitmap.degree(url));
+
+        	} else if(url != null && url.indexOf("video://") == 0) {
+
+        		url = url.replace("video://", "");
+
+        		bm = ThumbnailUtils.createVideoThumbnail(url, MediaStore.Video.Thumbnails.MINI_KIND);
+
+        		mImageView.setMaxScale(1f);
+
         	} else {
 
 	            try {
