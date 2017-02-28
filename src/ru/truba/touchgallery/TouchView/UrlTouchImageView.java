@@ -17,32 +17,37 @@
  */
 package ru.truba.touchgallery.TouchView;
 
+import java.io.File;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+
+import org.appcelerator.kroll.common.Log;
+
+import ru.truba.touchgallery.TouchView.InputStreamWrapper.InputStreamProgressListener;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.net.Uri;
+import android.media.ThumbnailUtils;
 import android.os.AsyncTask;
+import android.provider.MediaStore;
 import android.util.AttributeSet;
 import android.widget.ImageView.ScaleType;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
-import android.media.ThumbnailUtils;
-import android.provider.MediaStore;
 
-import java.io.InputStream;
-import java.net.URL;
-import java.net.URLConnection;
-
-import com.util.UtilBitmap;
 import com.gbaldera.titouchgallery.RHelper;
-
-//import ru.truba.touchgallery.R;
-import ru.truba.touchgallery.TouchView.InputStreamWrapper.InputStreamProgressListener;
+import com.util.UtilBitmap;
+import com.util.UtilFile;
 
 public class UrlTouchImageView extends RelativeLayout {
 
+	private static final String LOG_TAG = "UrlTouchImageView";
+
 	private static final int MAX_IMAGE_W = 960;
 	private static final int MAX_IMAGE_H = 960;
+	
+	private static String CACHE_FOLDER = null;
 
     protected ProgressBar mProgressBar;
     protected TouchImageView mImageView;
@@ -97,50 +102,83 @@ public class UrlTouchImageView extends RelativeLayout {
         @Override
         protected Bitmap doInBackground(String... strings) {
             String url = strings[0];
-            Bitmap bm = null;
+            Bitmap bitmap = null;
 
         	if (url != null && url.indexOf("file://") == 0) {
 
         		url = url.replace("file://", "");
 
-        		bm = UtilBitmap.decodeFile(url, MAX_IMAGE_W, MAX_IMAGE_H);
-                bm = UtilBitmap.rotate(bm, UtilBitmap.degree(url));
+        		bitmap = UtilBitmap.decodeFile(url, MAX_IMAGE_W, MAX_IMAGE_H);
+                bitmap = UtilBitmap.rotate(bitmap, UtilBitmap.degree(url));
 
         	} else if(url != null && url.indexOf("video://") == 0) {
 
         		url = url.replace("video://", "");
 
-        		bm = ThumbnailUtils.createVideoThumbnail(url, MediaStore.Video.Thumbnails.MINI_KIND);
+        		bitmap = ThumbnailUtils.createVideoThumbnail(url, MediaStore.Video.Thumbnails.MINI_KIND);
 
         		mImageView.setMaxScale(1f);
 
         	} else {
+        		
+        		if (CACHE_FOLDER == null && mContext != null) {
+        			StringBuilder sb = new StringBuilder("/data/data/");
+        			sb.append(mContext.getPackageName());
+        			sb.append("/app_appdata/cache/");
+        			
+        			CACHE_FOLDER = sb.toString();
+        		}
 
-	            try {
-	                URL aURL = new URL(url);
-	                URLConnection conn = aURL.openConnection();
-	                conn.connect();
-	                InputStream is = conn.getInputStream();
-	                int totalLen = conn.getContentLength();
-	                InputStreamWrapper bis = new InputStreamWrapper(is, 8192, totalLen);
-	                bis.setProgressListener(new InputStreamProgressListener()
-					{					
-						public void onProgress(float progressValue, long bytesLoaded,
-								long bytesTotal)
-						{
-							publishProgress((int)(progressValue * 100));
+        		String[] split = url.split(";");
+        		if (split.length > 1) {
+        			
+        			String path = CACHE_FOLDER + UtilFile.name(split[1]);
+        			if(new File(path).exists()) {
+        				
+        				bitmap = UtilBitmap.decodeFile(path, MAX_IMAGE_W, MAX_IMAGE_H);
+
+        			} else {
+
+						HttpURLConnection connection = null;
+
+						try {
+							URL aURL = new URL(split[0]);
+							connection = (HttpURLConnection) aURL.openConnection();
+							connection.setRequestProperty("Connection", "close");
+							connection.connect();
+		
+							InputStream is = connection.getInputStream();
+							int totalLength = connection.getContentLength();
+		
+							InputStreamWrapper bis = new InputStreamWrapper(is, 8192, totalLength);
+							bis.setProgressListener(new InputStreamProgressListener() {
+		
+								public void onProgress(float progressValue, long bytesLoaded, long bytesTotal) {
+									publishProgress((int) (progressValue * 100));
+								}
+							});
+		
+							bitmap = BitmapFactory.decodeStream(is, null, UtilBitmap.options(mContext, url, MAX_IMAGE_W, MAX_IMAGE_H));
+							UtilFile.saveFile(bitmap, path, 100, false);
+		
+							bis.close();
+							is.close();
+		
+						} catch (Exception e) {
+		
+							if (Log.isDebugModeEnabled()) {
+								Log.d(LOG_TAG, "e = " + e.toString());
+							}
+						} finally {
+		
+							if (connection != null) {
+								connection.disconnect();
+							}
 						}
-					});
-	
-	                bm = BitmapFactory.decodeStream(is, null, UtilBitmap.options(mContext, url, MAX_IMAGE_W, MAX_IMAGE_H));
-
-	                bis.close();
-	                is.close();
-	            } catch (Exception e) {
-	                e.printStackTrace();
-	            }
+        			}
+        		}
         	}
-	        return bm;
+	        return bitmap;
         }
         
         @Override
